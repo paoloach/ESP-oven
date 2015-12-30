@@ -3,6 +3,8 @@
 *.ko
 *.obj
 *.elf
+build
+firmware
 
 # Precompiled Headers
 *.gch
