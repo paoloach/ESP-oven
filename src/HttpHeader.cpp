@@ -45,13 +45,16 @@ HttpHeader::HttpHeader(const char * line) {
     lenHeader = iter-line;
   }
   if (lenHeader>0){
+    if (lenHeader > 20){
+      lenHeader=20;
+    }
     header = new char[lenHeader+1];
     memcpy(header, line, lenHeader);
     header[lenHeader]=0;
   }
   if (startValue != NULL){
     int lenValue = iter-startValue;
-    if (lenHeader>0){
+    if (lenValue>0){
       value = new char[lenValue+1];
       memcpy(value, startValue, lenValue);
       value[lenValue]=0;
@@ -59,6 +62,7 @@ HttpHeader::HttpHeader(const char * line) {
   }
 }
 HttpHeader::~HttpHeader(){
+  printf("[%s:%d]\n", __FILE__, __LINE__);
   delete header;
   delete value;
 }

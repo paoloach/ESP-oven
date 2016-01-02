@@ -27,6 +27,7 @@ void HTTP::init(){
   body = nullptr;
   bodyLen=0;
   needOtherData=true;
+  headers.clear();
 }
 void HTTP::feed(const char * data, u16_t len){
   const char * endData = data + len;
@@ -59,10 +60,8 @@ void HTTP::feed(const char * data, u16_t len){
           if (nextToken - curData >= 8){
             if (memcmp(curData,"HTTP/1.1", 8)==0){
               httpVersion = HTTP_1_1;
-              printf("http Version 1.1\n");
             } else if (memcmp(curData,"HTTP/1.0",8)==0){
               httpVersion = HTTP_1_0;
-              printf("http Version 1.0\n");
             } else {
               httpVersion = HTTP_UNKNOWN_VERSION;
               parseError=true;
@@ -84,14 +83,13 @@ void HTTP::feed(const char * data, u16_t len){
         nextToken = findEndLine(curData, endData);
         if (nextToken <  endData){
           if (nextToken - curData > 2){
-            headers.emplace_back(curData);
+          //  headers.emplace_back(curData);
             curData = nextToken;
             if (curData[0] == '\r' && curData[1] == '\n'){
                 status = HTTP_BODY;
                 curData += 2;
             }
           } else {
-            printf("End parse\n");
             status=END_PARSE;
           }
         } else {
@@ -131,9 +129,12 @@ void HTTP::print(){
     printf("body: %s\n", body);
   }
 
+  int index=0;
   for(auto & header: headers){
+    printf("%d)  ",index);
     header.print();
     printf("\n" );
+    index++;
   }
 
 }

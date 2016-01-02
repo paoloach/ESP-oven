@@ -20,7 +20,7 @@
 #include "gpio.h"
 
 int degree;
-int threshold=110;
+int threshold=40;
 
 void
 gpio_output_set(uint32 set_mask, uint32 clear_mask, uint32 enable_mask, uint32 disable_mask)

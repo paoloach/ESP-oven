@@ -50,7 +50,7 @@ void initHttpd(void){
   matchersGet.emplace_back("/temperature", getTemperature);
   matchersGet.emplace_back("/threshold", getThreshold);
 
-  matchersPut.emplace_back("/temperature", setTemperature);
+  matchersPut.emplace_back("/threshold", setTemperature);
 
   tcpPcb = tcp_new();
   Connection::init();
@@ -74,7 +74,6 @@ void initHttpd(void){
 
 static err_t  newConnection(void *arg, struct tcp_pcb *newpcb, err_t err) {
   err_t error;
-  printf("new connection\n");
 
   struct Connection * newConnection = Connection::getEmptySlot();
   if (newConnection == NULL){
@@ -106,13 +105,11 @@ static err_t recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err){
     if (error != ERR_OK){
       printf("Unable to close the connection: %d\n", error);
     }
-    printf("%s:%d free connection\n",__FILE__,__LINE__);
     connection->tcpPcb=NULL;
     return error;
   }
 
   while(1){
-    printf("buf len: %d (tot %d)\n", p->len, p->tot_len);
     connection->http.feed((const char *)p->payload, p->len);
     if (connection->http.error()){
       printf("ERROR parsing data\n");
@@ -146,13 +143,13 @@ static err_t recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err){
       matcher(connection);
     }
   }
-
   if (!found){
     connection->httpResponse.sendNotFound(connection);
   }
 
   tcp_recved(tpcb, p->len);
   pbuf_free(p);
+  printf("[%s:%d]\n", __FILE__, __LINE__);
   return ERR_OK;
 }
 
@@ -199,4 +196,5 @@ void setTemperature(Connection * c){
   if (!c->httpResponse.sendOk(c,nullptr)){
     tcp_close(c->tcpPcb);
   }
+  printf("[%s:%d]\n", __FILE__, __LINE__);
 }

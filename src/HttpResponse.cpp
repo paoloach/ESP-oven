@@ -28,7 +28,6 @@ void HttpResponse::sendNotFound(Connection * c){
   addToBuffer(contentLengthHeader,sizeof(contentLengthHeader)-1);
   addToBuffer("0\r\n",3);
   addToBuffer("\r\n",2);
-  printf("[%s,%d] send %d bytes: \n%s",__FILE__, __LINE__, used, startBuffer );
   err_t error = tcp_write(c->tcpPcb, startBuffer, used,0);;
   if (error != ERR_OK){
     printf("[%s,%d] Error writing: %d",__FILE__, __LINE__, error );
@@ -40,7 +39,6 @@ void HttpResponse::sendBadRequest(Connection * c){
   addToBuffer(contentLengthHeader,sizeof(contentLengthHeader)-1);
   addToBuffer("0\r\n",3);
   addToBuffer("\r\n",2);
-  printf("[%s,%d] send %d bytes: \n%s",__FILE__, __LINE__, used, startBuffer );
   err_t error = tcp_write(c->tcpPcb, startBuffer, used,0);;
   if (error != ERR_OK){
     printf("[%s,%d] Error writing: %d",__FILE__, __LINE__, error );
@@ -62,7 +60,6 @@ bool HttpResponse::sendOk(Connection * c, const char * response){
   if (dataLen > 0){
     addToBuffer(response, dataLen);
   }
-  printf("[%s,%d] send %d bytes: \n%s",__FILE__, __LINE__, used, startBuffer );
   err_t error = tcp_write(c->tcpPcb, startBuffer, used,0);;
   if (error != ERR_OK){
     printf("[%s,%d] Error writing: %d",__FILE__, __LINE__, error );
