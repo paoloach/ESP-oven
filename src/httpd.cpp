@@ -1,4 +1,5 @@
 #include <vector>
+#include <string.h>
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
@@ -19,6 +20,8 @@
 struct tcp_pcb * tcpPcb;
 extern int degree;
 extern int threshold;
+extern bool enable;
+extern bool restart;
 
 static err_t  newConnection(void *arg, struct tcp_pcb *newpcb, err_t err);
 static err_t recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
@@ -28,6 +31,8 @@ static void getWhoAreYou(Connection *c);
 static void getTemperature(Connection * c);
 static void getThreshold(Connection * c);
 static void setTemperature(Connection * c);
+static void setEnable(Connection * c);
+static void setRestart(Connection * c);
 
 std::vector<UrlMatcher> matchersGet;
 std::vector<UrlMatcher> matchersPut;
@@ -51,6 +56,8 @@ void initHttpd(void){
   matchersGet.emplace_back("/threshold", getThreshold);
 
   matchersPut.emplace_back("/threshold", setTemperature);
+  matchersPut.emplace_back("/enable", setEnable);
+  matchersPut.emplace_back("/restart", setRestart);
 
   tcpPcb = tcp_new();
   Connection::init();
@@ -196,5 +203,48 @@ void setTemperature(Connection * c){
   if (!c->httpResponse.sendOk(c,nullptr)){
     tcp_close(c->tcpPcb);
   }
-  printf("[%s:%d]\n", __FILE__, __LINE__);
+}
+
+void setEnable(Connection * c){
+  const char * body = c->http.getBody();
+  printf("Body: %s\n",body );
+  if (strcmp(body, "1")){
+    enable=true;
+  }
+  if (strcmp(body, "true")){
+    enable=true;
+  }
+  if (strcmp(body, "0")){
+    enable=false;
+  }
+  if (strcmp(body, "false")){
+    enable=false;
+  }
+
+  printf("enable: %d\n",enable );
+  if (!c->httpResponse.sendOk(c,nullptr)){
+    tcp_close(c->tcpPcb);
+  }
+}
+
+void setRestart(Connection * c){
+  const char * body = c->http.getBody();
+  printf("Body: %s\n",body );
+  if (strcmp(body, "1")){
+    restart=true;
+  }
+  if (strcmp(body, "true")){
+    restart=true;
+  }
+  if (strcmp(body, "0")){
+    restart=false;
+  }
+  if (strcmp(body, "false")){
+    restart=false;
+  }
+
+  printf("restart: %d\n",restart );
+  if (!c->httpResponse.sendOk(c,nullptr)){
+    tcp_close(c->tcpPcb);
+  }
 }
