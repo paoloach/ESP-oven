@@ -6,6 +6,6 @@
 
 
 #define MAX_INTEGRAL_SIZE 20
-#define MAX_ERROR_HYSTORY 200
+#define MAX_ERROR_HYSTORY 50
 
 #endif

@@ -10,7 +10,7 @@ public:
 
   void addError(int err);
   int32_t sumLast(uint32_t lastCount);
-  uint32_t maxMeanError(int threshold);
+  uint32_t maxMeanError();
   uint32_t getSize() const {return nextToAdd;}
 private:
   int32_t errors[MAX_ERROR_HYSTORY];

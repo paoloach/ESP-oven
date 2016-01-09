@@ -73,11 +73,14 @@ void spi_task(void *pvParameters){
   PID pid(errorHistory);
 
   while(true){
+    printf("%s:%d\n",__FILE__,__LINE__);
     restart=false;
     warnup(errorHistory, pid);
+printf("%s:%d\n",__FILE__,__LINE__);
     int on_perc;
 
     while(!restart){
+      printf("%s:%d\n",__FILE__,__LINE__);
       readTemp();
       int err = threshold-degree;
       errorHistory.addError(err);
@@ -93,6 +96,7 @@ void spi_task(void *pvParameters){
 static void warnup(ErrorHistory &errorHistory, PID & pid) {
   int on_perc;
 
+printf("%s:%d\n",__FILE__,__LINE__);
   while(1){
     // tempThreshold is not a costant for the cycle because can be varied by a rest command
     int tempThreshold = threshold-10;
@@ -104,7 +108,7 @@ static void warnup(ErrorHistory &errorHistory, PID & pid) {
       on_perc=0;
     }
     on_off(on_perc);
-    if (errorHistory.getSize() > 20 && errorHistory.maxMeanError(tempThreshold) < 5){
+    if (errorHistory.getSize() > 20 && errorHistory.maxMeanError() < 5){
       return;
     }
   }
@@ -136,6 +140,6 @@ void user_init(void){
     sdk_wifi_set_opmode(STATION_MODE);
     sdk_wifi_station_set_config(&config);
 
-    xTaskCreate(&spi_task, (signed char *)"SPI_task", 256, NULL, 2, NULL);
+    xTaskCreate(&spi_task, (signed char *)"SPI_task", 1024, NULL, 2, NULL);
     initHttpd();
 }
