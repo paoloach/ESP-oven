@@ -4,7 +4,8 @@
 #include <esp_log.h>
 #include "http.h"
 
-
+constexpr const char *CONTENT_LENGTH = "Content-Length:";
+constexpr const size_t CONTENT_LENGTH_SIZE = 15;
 constexpr const char *TAG = "http";
 constexpr size_t BUFFER_LEN = 100;
 static char buffer[BUFFER_LEN];
@@ -27,8 +28,15 @@ HTTP::~HTTP() {
 }
 
 
-void HTTP::feed(const char *data, u16_t len) {
-    while (len > 0) {
+void HTTP::feed(const char *data) {
+    if (status == HTTP_BODY) {
+        *bodyIter = *data;
+        bodyIter++;
+        if ((bodyIter - body) == bodyLen) {
+            ESP_LOGI(TAG,"END BODY and END PARSE");
+            status = END_PARSE;
+        }
+    } else {
         if (previousChar == '\r' && *data == '\n') {
             *bufferIter = 0;
             feedNewLine();
@@ -45,74 +53,85 @@ void HTTP::feed(const char *data, u16_t len) {
 }
 
 void HTTP::feedNewLine() {
-    ESP_LOGI(TAG, "new line: %s", buffer);
-    const char *curData = buffer;
+    const char *curData;
     const char *nextToken;
-    while (curData < bufferIter) {
-        switch (status) {
-            case FIRST_LINE: {
-                curData = parseMethod(curData);
-                curData = removeSpaces(curData);
-                nextToken = findSpace(curData);
-                if (nextToken >= bufferIter) {
-                    status = PARSE_ERROR;
-                    break;
-                }
-                int size = nextToken - curData;
-                url = new char[size + 1];
-                memcpy(url, curData, size);
-                url[size] = 0;
-                curData = removeSpaces(nextToken);
-                if (bufferIter - curData >= 8) {
-                    if (memcmp(curData, "HTTP/1.1", 8) == 0) {
-                        httpVersion = HTTP_1_1;
-                        ESP_LOGD(TAG, "HTTP 1.1");
-                    } else if (memcmp(curData, "HTTP/1.0", 8) == 0) {
-                        httpVersion = HTTP_1_0;
-                        ESP_LOGI(TAG, "HTTP 1.0");
-                    } else {
-                        status = PARSE_ERROR;
-                        ESP_LOGW(TAG, "unknown version: %s", curData);
-                    }
-                } else {
-                    status = PARSE_ERROR;
-                    break;
-                }
-                status = HTTP_HEADERS;
+    ESP_LOGI(TAG, "line: %s", buffer);
+    switch (status) {
+        case FIRST_LINE: {
+            curData = parseMethod(buffer);
+            curData = removeSpaces(curData);
+            nextToken = findSpace(curData);
+            if (nextToken >= bufferIter) {
+                status = PARSE_ERROR;
                 break;
             }
-            case HTTP_HEADERS:
-                if (bufferIter - curData >= 2) {
-                    if (curData[0] == '\r' && curData[1] == '\n') {
+            int size = nextToken - curData;
+            url = new char[size + 1];
+            memcpy(url, curData, size);
+            url[size] = 0;
+            curData = removeSpaces(nextToken);
+            if (bufferIter - curData >= 8) {
+                if (memcmp(curData, "HTTP/1.1", 8) == 0) {
+                    httpVersion = HTTP_1_1;
+                } else if (memcmp(curData, "HTTP/1.0", 8) == 0) {
+                    httpVersion = HTTP_1_0;
+                } else {
+                    status = PARSE_ERROR;
+                    ESP_LOGW(TAG, "unknown version: %s", curData);
+                }
+            } else {
+                status = PARSE_ERROR;
+                break;
+            }
+            status = HTTP_HEADERS;
+        }
+            break;
+        case HTTP_HEADERS:
+            if (bufferIter - buffer >= 1) {
+                if (buffer[0] == '\r' ) {
+                    if (bodyLen > 0) {
+                        ESP_LOGI(TAG,"HTTP BODY start");
                         status = HTTP_BODY;
+                    } else {
+                        status = END_PARSE;
                     }
+                } else {
+                    parseHeader();
+                }
+            } else {
+                if (bodyLen > 0) {
+                    status = HTTP_BODY;
                 } else {
                     status = END_PARSE;
                 }
-                break;
-            case HTTP_BODY:
-                bodyLen = bufferIter - curData;
-                if (bodyLen > 0) {
-                    body = new char[bodyLen + 1];
-                    memcpy(body, curData, bodyLen);
-                    body[bodyLen] = 0;
-                }
-                status = END_PARSE;
-                break;
-            case END_PARSE:
-                print();
-                break;
-            case PARSE_ERROR:
-                ESP_LOGE(TAG, "Parse error");
-                break;
-        }
+            }
+            break;
+        case END_PARSE:
+            print();
+            break;
+        case PARSE_ERROR:
+            ESP_LOGE(TAG, "Parse error");
+            break;
+    }
+}
+
+
+void HTTP::parseHeader() {
+    size_t bufferLen = bufferIter - buffer;
+    if (bufferLen >= CONTENT_LENGTH_SIZE && memcmp(buffer, CONTENT_LENGTH,CONTENT_LENGTH_SIZE)==0) {
+        ESP_LOGI(TAG, "Content length: %s", &buffer[CONTENT_LENGTH_SIZE + 1]);
+        bodyLen = atoi(&buffer[CONTENT_LENGTH_SIZE + 1]);
+        body = new char[bodyLen + 1];
+        body[bodyLen] = 0;
+        bodyIter = body;
+        ESP_LOGI(TAG, "Body len: %d", bodyLen);
     }
 }
 
 void HTTP::print() {
-    ESP_LOGD(TAG,"method: %d", method);
-    ESP_LOGD(TAG,"url: %s", url);
-    ESP_LOGD(TAG,"headers found: %d", headers.size());
+    ESP_LOGD(TAG, "method: %d", method);
+    ESP_LOGD(TAG, "url: %s", url);
+    ESP_LOGD(TAG, "headers found: %d", headers.size());
     if (body != NULL) {
         ESP_LOGD(TAG, "body: %s", body);
     }

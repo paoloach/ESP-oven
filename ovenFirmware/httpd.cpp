@@ -70,14 +70,14 @@ void httpTask(void *) {
 
     ESP_LOGI("http", "Start httpd");
     matchersGet.reserve(4);
-    matchersGet.emplace_back(UrlMatcher("/", whoAreYouFunc));
-    matchersGet.emplace_back(UrlMatcher("/whoareyou", getWhoAreYou));
-    matchersGet.emplace_back(UrlMatcher("/temperature", getTemperature));
-    matchersGet.emplace_back(UrlMatcher("/threshold", getThreshold));
+    matchersGet.emplace_back("/", whoAreYouFunc);
+    matchersGet.emplace_back("/whoareyou", getWhoAreYou);
+    matchersGet.emplace_back("/temperature", getTemperature);
+    matchersGet.emplace_back("/threshold", getThreshold);
 
-    matchersPut.emplace_back(UrlMatcher("/threshold", setTemperature));
-    matchersPut.emplace_back(UrlMatcher("/enable", setEnable));
-    matchersPut.emplace_back(UrlMatcher("/restart", setRestart));
+    matchersPut.emplace_back("/threshold", setTemperature);
+    matchersPut.emplace_back("/enable", setEnable);
+    matchersPut.emplace_back("/restart", setRestart);
 
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
                         false, true, portMAX_DELAY);
@@ -113,7 +113,6 @@ void httpTask(void *) {
         struct sockaddr_in connection;
         socklen_t socklen = sizeof(struct sockaddr_in);
         int newConnection = accept(serverSocket, (struct sockaddr *) &connection, &socklen);
-        ESP_LOGI("http", "acceptd: %d", newConnection);
         if (newConnection >= 0) {
             HTTP http;
             if (readRequest(newConnection, http)) {
@@ -137,15 +136,16 @@ bool readRequest(int fd, HTTP &http) {
         tv.tv_usec = 0;
         selectRes = select(fd + 1, &read_fds, NULL, NULL, &tv);
         if (selectRes > 0) {
-            if (read(fd, data, 1) > 0);
-            http.feed(data, 1);
+            if (read(fd, data, 1) > 0)
+                http.feed(data);
         } else if (selectRes < 0) {
             return false;
         }
         if (http.error()) {
+            ESP_LOGE(TAG, "Parse error (%s:%d)",__FILE__,__LINE__);
             return false;
         }
-        if (http.needMoreData()) {
+        if (!http.needMoreData()) {
             return true;
         }
     }
@@ -172,13 +172,14 @@ void dispatch(int fd, HTTP &http) {
         }
     }
     if (!found) {
+        ESP_LOGW(TAG,"Matcher NOT found");
         HttpResponse::sendNotFound(fd);
     }
 
 }
 
 void getWhoAreYou(int fd, HTTP &http) {
-    ESP_LOGI("httpd", "Respond at whoareyou\n");
+    ESP_LOGI("httpd", "Respond at whoareyou");
     HttpResponse::sendOk(fd, "I am ESP-OVEN");
 }
 
@@ -197,25 +198,25 @@ void getThreshold(int fd, HTTP &http) {
 }
 
 void setTemperature(int fd, HTTP &http) {
+    ESP_LOGI("HTTP", "Set Threashold");
     const char *body = http.getBody();
     const char *iter = body;
     const char *end = body + http.getBodyLength();
-    printf("Body: %s\n", body);
     for (; iter < end; iter++) {
         if (!isdigit(*iter)) {
-            printf("ERROR: body is not a number\n");
+            ESP_LOGI("HTTPD","ERROR: body is not a number\n");
             HttpResponse::sendBadRequest(fd);
             return;
         }
     }
     threshold = atoi(body);
-    ESP_LOGI("http", "new threshold: %d\n", threshold);
+    ESP_LOGI(TAG, "new threshold: %d\n", threshold);
     HttpResponse::sendOk(fd, nullptr);
 }
 
 void setEnable(int fd, HTTP &http) {
     const char *body = http.getBody();
-    printf("Body: %s\n", body);
+    ESP_LOGI(TAG,"Body: %s\n", body);
     if (strcmp(body, "1")) {
         enable = true;
     }
@@ -229,13 +230,13 @@ void setEnable(int fd, HTTP &http) {
         enable = false;
     }
 
-    ESP_LOGI("httpd", "enable: %d\n", enable);
+    ESP_LOGI(TAG, "enable: %d\n", enable);
     HttpResponse::sendOk(fd, nullptr);
 }
 
 void setRestart(int fd, HTTP &http) {
     const char *body = http.getBody();
-    ESP_LOGD("httpd", "Body: %s\n", body);
+    ESP_LOGD(TAG, "Body: %s\n", body);
     if (strcmp(body, "1")) {
         restart = true;
     }
@@ -249,6 +250,6 @@ void setRestart(int fd, HTTP &http) {
         restart = false;
     }
 
-    ESP_LOGD("httpd", "restart: %d\n", restart);
+    ESP_LOGD(TAG, "restart: %d\n", restart);
     HttpResponse::sendOk(fd, nullptr);
 }

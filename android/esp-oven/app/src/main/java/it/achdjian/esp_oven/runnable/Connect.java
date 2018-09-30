@@ -48,50 +48,7 @@ public class Connect implements Runnable {
             });
             return;
         }
-        final List<InterfaceAddress> availableAddress = new ArrayList<>();
-        try {
-            Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-            for (NetworkInterface netInt : Collections.list(nets)) {
-                if (stop) {
-                    return;
-                }
-                if (netInt.isLoopback() || !netInt.isUp() || netInt.isVirtual()) {
-                    continue;
-                }
-                List<InterfaceAddress> interfaceAddresses = netInt.getInterfaceAddresses();
-                for (InterfaceAddress interfaceAddress : interfaceAddresses) {
-                    InetAddress address = interfaceAddress.getAddress();
-                    if (address instanceof Inet4Address) {
-                        availableAddress.add(interfaceAddress);
-                    }
-                }
-            }
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
 
-        for (InterfaceAddress interfaceAddress : availableAddress) {
-            InetAddress address = interfaceAddress.getAddress();
-            String hostAddress = address.getHostAddress();
-            Log.d(TAG, "lastAddress: " + hostAddress + " networkPrefixLength: " + interfaceAddress.getNetworkPrefixLength());
-            String[] split = hostAddress.split("[.]");
-            for (int i = 100; i <= 255; i++) {
-                if (stop) {
-                    return;
-                }
-                String target = split[0] + "." + split[1] + "." + split[2] + "." + i;
-                if (checkTarget(target)) {
-                    this.lastAddress = target;
-                    parent.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            parent.enable();
-                        }
-                    });
-                    return;
-                }
-            }
-        }
     }
 
     private boolean checkTarget(String target) {

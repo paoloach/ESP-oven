@@ -10,8 +10,8 @@ typedef void (*UrlMatcherCB)(int fd, HTTP & http);
 class UrlMatcher {
 public:
   UrlMatcher(const char * matcher, UrlMatcherCB  f);
-  UrlMatcher(UrlMatcher & other):matcher(other.matcher), function(other.function){other.matcher=nullptr;function=nullptr;}
   UrlMatcher(const UrlMatcher & other);
+    UrlMatcher(UrlMatcher && other);
   UrlMatcher():matcher(nullptr){}
   ~UrlMatcher(){delete matcher;}
   bool operator==(const char *);

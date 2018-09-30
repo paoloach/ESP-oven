@@ -1,6 +1,7 @@
 //
 // Created by paolo on 12/09/18.
 //
+#include <esp_log.h>
 #include "spi.h"
 #include "gpio.h"
 #include "errorHistory.h"
@@ -48,7 +49,6 @@ static void on_off(int on_perc) {
 static void warnup(ErrorHistory &errorHistory, PID & pid) {
     int on_perc;
 
-// printf("%s:%d\n",__FILE__,__LINE__);
     while(1){
         // tempThreshold is not a costant for the cycle because can be varied by a rest command
         int tempThreshold = threshold-10;
@@ -84,15 +84,14 @@ void spi_task(void *pvParameters){
     ErrorHistory errorHistory;
     PID pid(errorHistory);
 
+    ESP_LOGI("SPI", "START SPI");
+
     while(true){
-//     printf("%s:%d\n",__FILE__,__LINE__);
         restart=false;
         warnup(errorHistory, pid);
-// printf("%s:%d\n",__FILE__,__LINE__);
         int on_perc;
 
         while(!restart){
-//       printf("%s:%d\n",__FILE__,__LINE__);
             readTemp();
             int err = threshold-degree;
             errorHistory.addError(err);

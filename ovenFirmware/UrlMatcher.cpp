@@ -5,6 +5,7 @@
 #include "UrlMatcher.h"
 
 UrlMatcher::UrlMatcher(const char *url, UrlMatcherCB f) : function(f) {
+
     int len = strlen(url) + 1;
     matcher = new char[len];
     memcpy(matcher, url, len);
@@ -25,5 +26,14 @@ void UrlMatcher::operator()(int fd, HTTP &http) {
     if (function)
         function(fd, http);
     else
-        ESP_LOGE("invalid function for %s\n", matcher);
+        ESP_LOGE("http","invalid function for %s", matcher);
 }
+
+UrlMatcher::UrlMatcher(UrlMatcher &&other) {
+    matcher = other.matcher;
+    function = other.function;
+    other.matcher = nullptr;
+    other.function= nullptr;
+}
+
+

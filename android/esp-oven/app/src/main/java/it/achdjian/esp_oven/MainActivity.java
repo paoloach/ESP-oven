@@ -1,5 +1,6 @@
 package it.achdjian.esp_oven;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -22,7 +23,8 @@ import it.achdjian.esp_oven.runnable.RetrieveThreshold;
 import it.achdjian.esp_oven.runnable.SetThreshold;
 
 public class MainActivity extends AppCompatActivity  implements View.OnClickListener {
-    private static final String ADDRESS_OVEN = "OVEN ADDRESS";
+    private static final String PREF_FILE = "PrefsFile";
+    private static final String ADDRESS_OVEN = "OVEN_ADDRESS";
     private static final String TAG = MainActivity.class.getName();
     private Button connectButton;
     private String address=null;
@@ -58,8 +60,9 @@ public class MainActivity extends AppCompatActivity  implements View.OnClickList
         newThresholdSet.setOnClickListener(this);
         this.enable(false);
         scheduleAtFixedRate =  Executors.newSingleThreadScheduledExecutor();
-        if (savedInstanceState != null){
-            address = savedInstanceState.getString(ADDRESS_OVEN);
+        SharedPreferences settings = getSharedPreferences(PREF_FILE, 0);
+        address = settings.getString(ADDRESS_OVEN,"192.168.1.104");
+        if (!address.isEmpty() ){
             reconnect();
         }
     }
@@ -165,5 +168,12 @@ public class MainActivity extends AppCompatActivity  implements View.OnClickList
 
     public void setThresholdView(int threshold) {
         thresholdView.setText(Integer.toString(threshold));
+    }
+
+    public void setAddressFound(String target) {
+        SharedPreferences settings = getSharedPreferences(PREF_FILE, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(ADDRESS_OVEN, target);
+        editor.commit();
     }
 }

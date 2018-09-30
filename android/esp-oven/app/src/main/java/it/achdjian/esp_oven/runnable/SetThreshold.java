@@ -36,16 +36,25 @@ public class SetThreshold implements Runnable {
         String url = "http://" + address + "/threshold";
         Log.d(TAG, "set new threshold at " + newThreshold);
         HttpEntity httpEntity = new HttpEntity(Integer.toString(newThreshold));
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, String.class);
-        HttpStatus statusCode = response.getStatusCode();
-        if (statusCode != HttpStatus.OK)
-            Log.d(TAG, "statusCode: " + statusCode.value());
-        mainActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mainActivity.reconnect();
-            }
-        });
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, String.class);
+            HttpStatus statusCode = response.getStatusCode();
+            if (statusCode != HttpStatus.OK)
+                Log.d(TAG, "statusCode: " + statusCode.value());
+            mainActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mainActivity.reconnect();
+                }
+            });
+        } catch (Exception e){
+            mainActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mainActivity.reconnect();
+                }
+            });
+        }
 
     }
 }
