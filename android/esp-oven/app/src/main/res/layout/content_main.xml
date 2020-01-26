@@ -85,7 +85,9 @@
         android:text="110"
         android:layout_toStartOf="@+id/setNewThreshold"
         android:editable="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        android:layout_toLeftOf="@+id/setNewThreshold"
+        android:layout_alignParentRight="true" />
 
     <Button
         style="?android:attr/buttonStyleSmall"
